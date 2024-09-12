@@ -36,16 +36,6 @@ time.sleep(5)
 
 # 2. กรอก Username และ Password
 try:
-    # รอให้ฟิลด์กรอก Email หรือ Username ปรากฏ
-    email_field = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.NAME, "email"))  # ปรับตาม selector ที่ฟิลด์อีเมลใช้
-    )
-    if email_field:
-        print("พบฟิลด์อีเมล")
-        email_field.send_keys('')
-        email_field.send_keys(Keys.RETURN)
-        time.sleep(2)
-    
     # รอให้ฟิลด์กรอก Username ปรากฏ
     username_field = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.NAME, "text"))
