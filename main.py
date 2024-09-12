@@ -77,7 +77,7 @@ def get_latest_tweets():
         tweets = driver.find_elements(By.XPATH, '//article[@data-testid="tweet"]')
         print("จำนวนทวีตที่พบ:", len(tweets))
         
-        tweet_texts = []
+        tweet_data = []
         for tweet in tweets:
             try:
                 # ดึง element ที่เกี่ยวข้องกับเวลา
@@ -89,11 +89,19 @@ def get_latest_tweets():
                 
                 current_time_gmt7 = datetime.now()
                 
-                # ตรวจสอบว่าเวลาปัจจุบันไม่เกิน 90 วินาที
+                # ตรวจสอบว่าเวลาปัจจุบันไม่เกิน 80 วินาที
                 time_diff = current_time_gmt7 - tweet_time_gmt7
-                if time_diff.total_seconds() <= 90:
+                if time_diff.total_seconds() <= 80:
                     tweet_text = tweet.find_element(By.XPATH, './/div[@data-testid="tweetText"]').text
-                    tweet_texts.append(tweet_text)
+                    
+                    # ดึงลิงก์จากแท็ก <a> ที่มีลิงก์โพสต์ทวีต
+                    tweet_link_element = tweet.find_element(By.XPATH, './/a[contains(@href, "/status/")]')
+                    tweet_link = tweet_link_element.get_attribute('href')
+                    
+                    tweet_data.append({
+                        'text': tweet_text,
+                        'link': tweet_link
+                    })
                     
             except Exception as e:
                 print(f"ไม่พบ element หรือเกิดข้อผิดพลาด: {e}")
@@ -109,7 +117,8 @@ try:
         latest_tweets = get_latest_tweets()
         if latest_tweets:
             for tweet in latest_tweets:
-                send_line_notify(f"โพสต์ใหม่ #aespa_SYNK_PARALLELLINE_inBKK: {tweet}")
+                # ส่งข้อความพร้อมลิงค์ทวีต
+                send_line_notify(f"โพสต์ใหม่ #aespa_SYNK_PARALLELLINE_inBKK: {tweet['text']}\nลิงก์: {tweet['link']}")
         time.sleep(60)
         driver.refresh()
 except KeyboardInterrupt:
