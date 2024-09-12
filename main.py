@@ -8,7 +8,7 @@ import time
 import requests
 from datetime import datetime, timedelta
 
-line_notify_token = 'OvcsLfRZVbIo1sZy549pnpFIUpYsX4WCrrmJ8VFCnu4'
+line_notify_token = ''
 line_notify_api = 'https://notify-api.line.me/api/notify'
 
 def send_line_notify(message):
