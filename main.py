@@ -25,7 +25,8 @@ def send_line_notify(message):
         print("การแจ้งเตือนล้มเหลว:", response.text)
 
 # Initialize the Chrome WebDriver
-s = Service('C:\webdriver\chromedriver.exe')
+s = Service('C:\webdriver\chromedriver.exe') #windows
+#s = Service('/usr/local/bin/chromedriver') #linux
 driver = webdriver.Chrome(service=s)
 
 # 1. เปิดหน้า Login ของ Twitter
@@ -106,7 +107,7 @@ def get_latest_tweets():
             except Exception as e:
                 print(f"ไม่พบ element หรือเกิดข้อผิดพลาด: {e}")
         
-        return tweet_texts
+        return tweet_data
     
     except Exception as e:
         print(f"ไม่พบข้อมูลทวีตหรือเกิดข้อผิดพลาด: {e}")
