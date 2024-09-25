@@ -104,9 +104,9 @@ def get_latest_tweets():
                 
                 current_time_gmt7 = datetime.now()
                 
-                # ตรวจสอบว่าเวลาปัจจุบันไม่เกิน 60 วินาที
+                # ตรวจสอบว่าเวลาปัจจุบันไม่เกิน 80 วินาที
                 time_diff = current_time_gmt7 - tweet_time_gmt7
-                if time_diff.total_seconds() <= 60:
+                if time_diff.total_seconds() <= 80:
                     tweet_text = tweet.find_element(By.XPATH, './/div[@data-testid="tweetText"]').text
                     
                     if "งานจะจัดวันที่" not in tweet_text: 
