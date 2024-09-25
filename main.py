@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 import time
 import requests
 from datetime import datetime, timedelta
@@ -25,8 +26,7 @@ def send_line_notify(message):
         print("การแจ้งเตือนล้มเหลว:", response.text)
 
 # Initialize the Chrome WebDriver
-s = Service('C:\webdriver\chromedriver.exe') #windows
-#s = Service('/usr/local/bin/chromedriver') #linux
+s = Service('/usr/local/bin/chromedriver')
 driver = webdriver.Chrome(service=s)
 
 # 1. เปิดหน้า Login ของ Twitter
@@ -66,6 +66,20 @@ time.sleep(5)
 url = "https://twitter.com/search?q=%23aespa_SYNK_PARALLELLINE_inBKK%20%E0%B8%9A%E0%B8%B1%E0%B8%95%E0%B8%A3&src=recent_search_click&f=live"
 driver.get(url)
 
+# Keep track of already notified tweet links along with the timestamp when they were added
+sent_tweet_links = {}
+
+# Time to keep a tweet link in the set (e.g., 5 minutes)
+TWEET_EXPIRY_TIME = timedelta(minutes=5)
+
+def cleanup_old_tweets():
+    current_time = datetime.now()
+    # Remove entries older than TWEET_EXPIRY_TIME
+    expired_links = [link for link, added_time in sent_tweet_links.items() if current_time - added_time > TWEET_EXPIRY_TIME]
+    for link in expired_links:
+        del sent_tweet_links[link]
+    print(f"Cleaned up {len(expired_links)} expired tweet links.")
+
 # ฟังก์ชันดึงโพสต์ที่ใช้แฮชแท็กและอายุโพสต์ไม่เกิน 1 นาท
 def get_latest_tweets():
     try:
@@ -90,23 +104,31 @@ def get_latest_tweets():
                 
                 current_time_gmt7 = datetime.now()
                 
-                # ตรวจสอบว่าเวลาปัจจุบันไม่เกิน 80 วินาที
+                # ตรวจสอบว่าเวลาปัจจุบันไม่เกิน 60 วินาที
                 time_diff = current_time_gmt7 - tweet_time_gmt7
-                if time_diff.total_seconds() <= 80:
+                if time_diff.total_seconds() <= 60:
                     tweet_text = tweet.find_element(By.XPATH, './/div[@data-testid="tweetText"]').text
                     
-                    # ดึงลิงก์จากแท็ก <a> ที่มีลิงก์โพสต์ทวีต
-                    tweet_link_element = tweet.find_element(By.XPATH, './/a[contains(@href, "/status/")]')
-                    tweet_link = tweet_link_element.get_attribute('href')
-                    
-                    tweet_data.append({
-                        'text': tweet_text,
-                        'link': tweet_link
-                    })
-                    
+                    if "งานจะจัดวันที่" not in tweet_text: 
+                        # ดึงลิงก์จากแท็ก <a> ที่มีลิงก์โพสต์ทวีต
+                        try:
+                            tweet_link_element = tweet.find_element(By.XPATH, './/a[contains(@href, "/status/")]')
+                            tweet_link = tweet_link_element.get_attribute('href')
+                        
+                            # ตรวจสอบว่าทวีตนี้ยังไม่ได้ถูกส่งแจ้งเตือน
+                            if tweet_link not in sent_tweet_links:
+                                tweet_data.append({
+                                    'text': tweet_text,
+                                    'link': tweet_link
+                                })
+                                # เพิ่มลิงก์ทวีตเข้าไปใน dict ของลิงก์ที่ส่งแล้ว พร้อมบันทึกเวลาที่เพิ่ม
+                                sent_tweet_links[tweet_link] = current_time_gmt7
+                        except Exception as e:
+                            print(e)
+                            continue
             except Exception as e:
-                print(f"ไม่พบ element หรือเกิดข้อผิดพลาด: {e}")
-        
+                print(f"An error occurred while fetching tweet data: {e}")
+                continue
         return tweet_data
     
     except Exception as e:
@@ -118,10 +140,12 @@ try:
         latest_tweets = get_latest_tweets()
         if latest_tweets:
             for tweet in latest_tweets:
-                # ส่งข้อความพร้อมลิงค์ทวีต
-                send_line_notify(f"โพสต์ใหม่ #aespa_SYNK_PARALLELLINE_inBKK: {tweet['text']}\nลิงก์: {tweet['link']}")
-        time.sleep(60)
-        driver.refresh()
+                #send_line_notify(f"โพสต์ใหม่ #aespa_SYNK_PARALLELLINE_inBKK: {tweet}")
+                send_line_notify(f"โพสต์ใหม่ Aespa: \n{tweet['text']}\nลิงก์: {tweet['link']}")
+        
+        time.sleep(60)  # หน่วงเวลา 60 วินาที
+        driver.refresh()  # รีเฟรชหน้าเว็บเพื่อดึงทวีตใหม่
+        cleanup_old_tweets()  # Run cleanup every iteration
 except KeyboardInterrupt:
     print("โปรแกรมหยุดทำงาน")
 finally:
