@@ -9,21 +9,18 @@ import time
 import requests
 from datetime import datetime, timedelta
 
-line_notify_token = ''
-line_notify_api = 'https://notify-api.line.me/api/notify'
+webhook_url = ""
 
-def send_line_notify(message):
-    headers = {
-        'Authorization': f'Bearer {line_notify_token}'
-    }
+def send_discord_notify(message):
     data = {
-        'message': message
+        'content': message
     }
-    response = requests.post(line_notify_api, headers=headers, data=data)
-    if response.status_code == 200:
-        print("ส่งแจ้งเตือนสำเร็จ")
+    response = requests.post(webhook_url, json=data)
+    if response.status_code == 204:
+        print("ส่งแจ้งเตือนทางสำเร็จ")
     else:
-        print("การแจ้งเตือนล้มเหลว:", response.text)
+        print("การแจ้งเตือนทางล้มเหลว:", response.text)
+
 
 # Initialize the Chrome WebDriver
 s = Service('/usr/local/bin/chromedriver')
@@ -42,6 +39,7 @@ try:
         EC.presence_of_element_located((By.NAME, "text"))
     )
     username_field.send_keys('TamTa28568')
+    #username_field.send_keys('TestBot093')
 
     # คลิกปุ่ม Next
     username_field.send_keys(Keys.RETURN)
@@ -63,7 +61,7 @@ except Exception as e:
 
 # รอให้หน้าเว็บโหลด
 time.sleep(5)
-url = "https://twitter.com/search?q=%23aespa_SYNK_PARALLELLINE_inBKK%20%E0%B8%9A%E0%B8%B1%E0%B8%95%E0%B8%A3&src=recent_search_click&f=live"
+url = "https://twitter.com/search?q=%23FujiiKazeBKK2024&src=recent_search_click&f=live"
 driver.get(url)
 
 # Keep track of already notified tweet links along with the timestamp when they were added
@@ -104,9 +102,9 @@ def get_latest_tweets():
                 
                 current_time_gmt7 = datetime.now()
                 
-                # ตรวจสอบว่าเวลาปัจจุบันไม่เกิน 80 วินาที
+                # ตรวจสอบว่าเวลาปัจจุบันไม่เกิน 120 วินาที
                 time_diff = current_time_gmt7 - tweet_time_gmt7
-                if time_diff.total_seconds() <= 80:
+                if time_diff.total_seconds() <= 120:
                     tweet_text = tweet.find_element(By.XPATH, './/div[@data-testid="tweetText"]').text
                     
                     if "งานจะจัดวันที่" not in tweet_text: 
@@ -140,10 +138,10 @@ try:
         latest_tweets = get_latest_tweets()
         if latest_tweets:
             for tweet in latest_tweets:
-                #send_line_notify(f"โพสต์ใหม่ #aespa_SYNK_PARALLELLINE_inBKK: {tweet}")
-                send_line_notify(f"โพสต์ใหม่ Aespa: \n{tweet['text']}\nลิงก์: {tweet['link']}")
+                message = f"<=====โพสต์ใหม่=====>\n{tweet['text']}\nลิงก์: {tweet['link']}"
+                send_discord_notify(message)
         
-        time.sleep(60)  # หน่วงเวลา 60 วินาที
+        time.sleep(40)  # หน่วงเวลา 40 วินาที
         driver.refresh()  # รีเฟรชหน้าเว็บเพื่อดึงทวีตใหม่
         cleanup_old_tweets()  # Run cleanup every iteration
 except KeyboardInterrupt:
